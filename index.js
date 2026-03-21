@@ -51,6 +51,7 @@ const withdrawalRoute = require("./routes/withdrawals.js");
 const investmentRoute = require("./routes/investments.js");
 const walletRoute = require("./routes/wallet.js")
 const transactionsRoute = require("./routes/transactions.js");
+const historyRoute = require("./routes/history");
 
 app.use(compression());
 
@@ -91,6 +92,7 @@ app.use("/withdrawal", withdrawalRoute)
 app.use("/investment", investmentRoute)
 app.use("/wallet", walletRoute)
 app.use("/transactions", transactionsRoute)
+app.use("/history", historyRoute)
 
 mongoose
   .connect(MONGODB_URI)

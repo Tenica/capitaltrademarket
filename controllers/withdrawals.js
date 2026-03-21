@@ -75,23 +75,42 @@ exports.createWithdrawalRequest = async (req, res, next) => {
 
 
 exports.viewAllWithdrawalRequest = async (req, res, next) => {
-  const adminAccess = req.user.isAdmin;
+  const isAdmin = req.user.isAdmin;
+  const userId = req.user._id;
 
   try {
-    if (adminAccess) {
-      const getAllWithdrawalRequest = await Withdrawal.find().populate("walletId");
-
-      if (getAllWithdrawalRequest) {
-        const result = getAllWithdrawalRequest;
-        const filterRequest = result.filter(
-          (res) => res.cancelled !== true && res.paid === false
-        );
-        res.status(200).json({
-          message: filterRequest.length <= 0 ? "No withdrawal requests made yet!" : filterRequest
-        });
-      }
+    let withdrawals;
+    if (isAdmin) {
+      // Admins see all pending/active withdrawals
+      withdrawals = await Withdrawal.find().populate("walletId");
     } else {
-      res.status(401).json({ message: "Unauthorized Access" });
+      // Users see only their own withdrawals (including cancelled/paid ones)
+      const userWallet = await Wallet.findOne({ owner: userId });
+      if (!userWallet) {
+        return res.status(200).json({ message: [] });
+      }
+      withdrawals = await Withdrawal.find({ walletId: userWallet._id }).populate("walletId");
+    }
+
+    if (withdrawals) {
+      const filtered = isAdmin 
+        ? withdrawals.filter(w => w.cancelled !== true && w.paid === false)
+        : withdrawals; // Users see their full history
+
+      // Map to include status string for frontend compatibility
+      const mappedResults = filtered.map(w => {
+        const doc = w.toObject();
+        let status = 'pending';
+        if (doc.paid) status = 'completed';
+        if (doc.cancelled) status = 'rejected';
+        return { ...doc, status };
+      });
+
+      res.status(200).json({
+        message: mappedResults.length <= 0 ? "No withdrawal requests made yet!" : mappedResults
+      });
+    } else {
+      res.status(200).json({ message: [] });
     }
   } catch (error) {
     console.log(error);
@@ -100,21 +119,31 @@ exports.viewAllWithdrawalRequest = async (req, res, next) => {
 };
 
 exports.viewSingleWithdrawalRequest = async (req, res, next) => {
-  const adminAccess = req.user.isAdmin;
+  const isAdmin = req.user.isAdmin;
+  const userId = req.user._id;
   const id = req.params.id;
 
   try {
-    if (adminAccess) {
-      const getSingleWithdrawalRequest = await Withdrawal.find({ _id: id }).populate("walletId");
-
-      const filterSingleWithdrawalRequest = getSingleWithdrawalRequest.filter(
-        (res) => res.cancelled !== true && res.paid === false
-      );
-      const response = filterSingleWithdrawalRequest.length > 0 ? res.status(200).json({ message: filterSingleWithdrawalRequest }) : res.status(404).json({ message: "No Request!" });
-
-    } else {
-      res.status(401).json({ message: "Unauthorized Access" });
+    const withdrawal = await Withdrawal.findById(id).populate("walletId");
+    
+    if (!withdrawal) {
+      return res.status(404).json({ message: "No Request!" });
     }
+
+    // Check ownership if not admin
+    if (!isAdmin) {
+      const userWallet = await Wallet.findOne({ owner: userId });
+      if (!userWallet || withdrawal.walletId._id.toString() !== userWallet._id.toString()) {
+        return res.status(401).json({ message: "Unauthorized Access" });
+      }
+    }
+
+    const doc = withdrawal.toObject();
+    let status = 'pending';
+    if (doc.paid) status = 'completed';
+    if (doc.cancelled) status = 'rejected';
+    
+    res.status(200).json({ message: [{ ...doc, status }] });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "An error occurred!" });

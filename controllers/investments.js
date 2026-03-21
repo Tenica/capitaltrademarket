@@ -34,6 +34,9 @@ exports.createInvestment = async (pId, getUpdatedTime, planEndDate, session = nu
 };
 
 exports.viewAllInvestments = async (req, res) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ message: "Unauthorized Access" });
+  }
   try {
     const investments = await Investments.find().populate({
       path: 'pendingConfirmation',

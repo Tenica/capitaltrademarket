@@ -205,15 +205,6 @@ exports.confirmSinglePendingConfirmation = async (req, res) => {
       throw new Error("Wallet update failed");
     }
 
-    // 5. Deduct from wallet immediately for the plan (New Logic)
-    // This ensures the available balance is $0 if they invested everything
-    await walletOperation(
-      { owner: user._id },
-      "-",
-      amount,
-      session
-    );
-
     // 6. Referral bonus (optional)
     const referralBonus = await addReferral(
       user.email,
@@ -240,21 +231,11 @@ exports.confirmSinglePendingConfirmation = async (req, res) => {
       session
     );
 
-    // 7. Main transaction records
-    // Log the Deposit
+    // 7. Main transaction record
     await createTransaction(
       amount,
-      `Deposit Approved (Referral: ${user.affiliate})`,
+      `Deposit Approved & Investment Started: ${plan.planName}`,
       "admin",
-      user._id,
-      session
-    );
-
-    // Log the Investment Purchase
-    await createTransaction(
-      amount,
-      `Investment Started: ${plan.planName}`,
-      "user",
       user._id,
       session
     );
