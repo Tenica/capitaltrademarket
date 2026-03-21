@@ -15,7 +15,8 @@ const { processDailyProfitsInternal } = require("./controllers/investments");
 const MONGODB_URI = process.env.MONGODB_URL;
 
 const fileStorage = multer.diskStorage({
-  destination: "./images/",
+  destination: process.env.VERCEL ? "/tmp" : "./images/",
+
   filename: function (req, file, cb) {
     cb(
       null,
@@ -51,22 +52,34 @@ const investmentRoute = require("./routes/investments.js");
 const walletRoute = require("./routes/wallet.js")
 const transactionsRoute = require("./routes/transactions.js");
 
-const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
-
 app.use(compression());
-app.use(morgan('combined', {stream: accessLogStream}))
+
+if (process.env.VERCEL) {
+  app.use(morgan('combined')); // Log to Vercel dashboard instead of file
+} else {
+  const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'})
+  app.use(morgan('combined', {stream: accessLogStream}))
+}
+
 app.use(bodyParser.json());
 
 app.use(
   multer({ storage: fileStorage, fileFilter: fileFilter }).single("image")
 );
-app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/images", express.static(process.env.VERCEL ? "/tmp" : path.join(__dirname, "images")));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
+});
+
+app.get("/", (req, res) => {
+  res.status(200).json({ 
+    message: "CapitalTradeMarkets API is running successfully!",
+    status: "online"
+  });
 });
 
 app.use("/auth", userAuthRoute);
