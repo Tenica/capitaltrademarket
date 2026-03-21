@@ -82,7 +82,9 @@ exports.convertISODate = (date) => {
 
 exports.todayPercentage = (min, max) => {
   const precision = 2; // Number of decimal places
-  const randomValue = Math.random() * (max - min) + min;
+  const minNum = Number(min);
+  const maxNum = Number(max);
+  const randomValue = Math.random() * (maxNum - minNum) + minNum;
   return parseFloat(randomValue.toFixed(precision));
 };
   

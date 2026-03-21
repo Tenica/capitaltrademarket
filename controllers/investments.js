@@ -2,6 +2,8 @@ const Investments = require("../model/investments");
 const Invoice = require("../model/invoice");
 const Wallet = require("../model/wallet");
 const PendingConfirmation = require("../model/pending-confirmation");
+const User = require("../model/user");
+const Plan = require("../model/plan");
 const mongoose = require("mongoose");
 const { createTransaction } = require("./transactions");
 
