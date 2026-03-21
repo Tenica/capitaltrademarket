@@ -1,5 +1,6 @@
 const Wallet = require("../model/wallet");
-
+const mongoose = require("mongoose");
+const { createTransaction } = require("./transactions");
 //user
 exports.getUserWallet = async (req, res, next) => {
    const id = req.user._id;
@@ -95,3 +96,43 @@ exports.walletOperation = async ({ owner: userId }, operator, amount, session = 
         throw new Error(`Unsupported wallet operator: ${operator}`);
     }
 }
+
+exports.adminTopUpWallet = async (req, res) => {
+  if (!req.user?.isAdmin) return res.status(403).json({ message: "Access Denied: Admin required" });
+  
+  const { userId } = req.params;
+  const { amount, description = "Admin Manual Wallet Top-Up" } = req.body;
+  const amountToNumber = parseFloat(amount);
+
+  if (isNaN(amountToNumber) || amountToNumber <= 0) {
+    return res.status(400).json({ message: "Please provide a valid positive amount." });
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+
+    // 1. Add funds to wallet
+    const updatedWallet = await exports.walletOperation({ owner: userId }, '+', amountToNumber, session);
+
+    // 2. Log transaction
+    await createTransaction(amountToNumber, description, "admin", userId, session);
+
+    await session.commitTransaction();
+
+    const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(updatedWallet.currencyAmount);
+    
+    res.status(200).json({ 
+      message: `Successfully added $${amountToNumber} to user wallet.`,
+      newBalance: formattedAmount
+    });
+  } catch (error) {
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    console.error("Top up error:", error);
+    res.status(500).json({ message: error.message || "Failed to top up wallet." });
+  } finally {
+    session.endSession();
+  }
+};

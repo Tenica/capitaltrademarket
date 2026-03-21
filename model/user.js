@@ -102,7 +102,7 @@ userSchema.methods.generateAuthToken = async function () {
       _id: user._id.toString(),
     },
     process.env.JSON_SECRET_KEY,
-    { expiresIn: "1h" }
+    { expiresIn: "7d" }
   );
   console.log(user._id);
 

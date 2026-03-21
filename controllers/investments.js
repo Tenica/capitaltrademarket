@@ -14,7 +14,9 @@ exports.createInvestment = async (pId, getUpdatedTime, planEndDate, session = nu
   const getNumber = extractNumber(planEndDate);
   const investmentDate = new Date(getUpdatedTime);
   const pendingConfirmation = pId;
-  const nextPayDate = new Date(investmentDate.getTime() + 24 * 60 * 60 * 1000);
+  const nextPayDate = new Date(investmentDate);
+  nextPayDate.setHours(0, 0, 0, 0); // Start at midnight
+  nextPayDate.setDate(nextPayDate.getDate() + 1); // For the next day
   const investmentEndDate = new Date(nextPayDate);
   investmentEndDate.setDate(investmentEndDate.getDate() + getNumber);
 
@@ -225,5 +227,30 @@ exports.updateAllUserInvestments = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Profit update failed", error: error.message });
+  }
+};
+
+exports.cronUpdateAll = async (req, res) => {
+  // Security check: Only allow if a secret header matches (or if it's Vercel's Cron request)
+  // Vercel adds a special header: Authorization: Bearer <CRON_SECRET>
+  const authHeader = req.headers.authorization;
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    console.warn("Unauthorized Cron Attempt blocked.");
+    return res.status(401).json({ message: "Unauthorized Cron Access" });
+  }
+
+  try {
+    console.log("[Vercel Cron] Starting automated daily payout...");
+    const result = await this.processDailyProfitsInternal();
+    res.status(200).json({ 
+      success: true, 
+      processed: result.processedCount,
+      message: `Cron job finished. Processed ${result.processedCount} investments.`
+    });
+  } catch (error) {
+    console.error("[Vercel Cron] Failed:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
