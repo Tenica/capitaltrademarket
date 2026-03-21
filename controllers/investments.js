@@ -103,6 +103,11 @@ exports.processDailyProfitsInternal = async (targetUserId = null, force = false)
         { lastProcessedDate: { $ne: today } },
         { lastProcessedDate: { $exists: false } }
       ];
+    } else if (!targetUserId) {
+      console.warn("  [Safety Guard] Blocking requested FORCE payout on ALL users. Force is only allowed per-user.");
+      await session.abortTransaction();
+      session.endSession();
+      return { processedCount: 0, message: "Safety Guard: Simultaneous forced-all is disabled. Please force individual users." };
     }
 
     // 2. If targetUserId is provided, filter query to only this user's investments
