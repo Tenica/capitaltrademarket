@@ -16,9 +16,10 @@ const transporter = nodemailer.createTransport({
 // Shared HTML header/footer for consistent branding
 const emailHeader = (title) => `
   <div style="font-family: 'Arial', sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); padding: 32px 40px; text-align: center;">
-      <h1 style="color: #f4b942; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 1px;">CapitalTradeMarkets</h1>
-      <p style="color: #a0aec0; margin: 6px 0 0 0; font-size: 13px;">Your Trusted Investment Platform</p>
+    <div style="background: #1a1a2e; padding: 25px 40px; text-align: center;">
+      <img src="${process.env.FRONTEND_URL || 'https://altrademarkets.vercel.app'}/logo.png" 
+           alt="CapitalTradeMarkets" 
+           style="max-height: 50px; width: auto; display: block; margin: 0 auto;" />
     </div>
     <div style="padding: 36px 40px;">
       <h2 style="color: #1a1a2e; margin: 0 0 16px 0; font-size: 20px;">${title}</h2>
@@ -50,11 +51,12 @@ exports.welcomeEmail = async (firstName, email) => {
         Your account has been successfully created. You are now part of a growing community of smart investors.
       </p>
       <div style="background: #f0fff4; border-left: 4px solid #38a169; padding: 16px 20px; border-radius: 6px; margin: 24px 0;">
-        <p style="color: #276749; font-size: 14px; margin: 0; font-weight: 600;">Here's how to get started:</p>
+        <p style="color: #276749; font-size: 14px; margin: 0; font-weight: 600;">Here's how to start earning:</p>
         <ul style="color: #4a5568; font-size: 14px; line-height: 2; margin: 8px 0 0 0; padding-left: 20px;">
-          <li>Log in to your account</li>
-          <li>Fund your wallet with your preferred currency</li>
-          <li>Select an investment plan and start earning daily returns</li>
+          <li>Log in to your dashboard</li>
+          <li>Select your preferred <strong>Investment Plan</strong></li>
+          <li>Make a secure payment for your chosen plan</li>
+          <li>Your investment <strong>starts earning ROI automatically</strong> once our team confirms your payment!</li>
         </ul>
       </div>
       <p style="color: #718096; font-size: 13px; line-height: 1.6;">
