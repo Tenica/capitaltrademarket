@@ -9,7 +9,6 @@ const helmet = require('helmet');
 const compression = require('compression');
 const morgan = require('morgan');
 const cors = require("cors")
-const cron = require("node-cron");
 const { processDailyProfitsInternal } = require("./controllers/investments");
 
 const MONGODB_URI = process.env.MONGODB_URL;
@@ -96,21 +95,9 @@ app.use("/history", historyRoute)
 
 mongoose
   .connect(MONGODB_URI)
-  .then((result) => {
+  .then(() => {
     app.listen(port);
     console.log(`Server running on port ${port}`);
-
-    // Schedule: Run daily profit processing every midnight (00:00)
-    cron.schedule("0 0 * * *", async () => {
-      console.log("[Cron Job] Starting daily profit processing...");
-      try {
-        const result = await processDailyProfitsInternal();
-        console.log(`[Cron Job] Finished. Processed ${result.processedCount} investments.`);
-      } catch (err) {
-        console.error("[Cron Job] Failed during automatic payout:", err);
-      }
-    });
-
   })
   .catch((err) => {
     console.log(err);

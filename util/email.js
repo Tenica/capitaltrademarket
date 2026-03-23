@@ -5,10 +5,10 @@ const nodemailer = require("nodemailer");
  * For production, use environment variables.
  */
 const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || "gmail", 
+  service: process.env.EMAIL_SERVICE || "gmail",
   auth: {
-    user: process.env.EMAIL_USER, 
-    pass: process.env.EMAIL_PASS, 
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
  */
 exports.passwordResetEmail = async (firstName, token, email) => {
   const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password/${token}`;
-  
+
   const mailOptions = {
     from: `"Support Team" <${process.env.EMAIL_USER}>`,
     to: email,

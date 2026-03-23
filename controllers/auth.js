@@ -148,8 +148,8 @@ exports.adminCreateUser = async (req, res, next) => {
     });
     await wallet.save();
 
-    res.status(201).json({ 
-      message: "User created successfully by admin", 
+    res.status(201).json({
+      message: "User created successfully by admin",
       user: {
         _id: savedUser._id,
         firstName: savedUser.firstName,
@@ -372,10 +372,10 @@ exports.verifyLogin2Fa = async (req, res) => {
     });
 
     if (verified) {
-       const authToken = await user.generateAuthToken();
-       res.status(200).json({ user, token: authToken });
+      const authToken = await user.generateAuthToken();
+      res.status(200).json({ user, token: authToken });
     } else {
-       res.status(400).json({ message: "Invalid Authenticator code" });
+      res.status(400).json({ message: "Invalid Authenticator code" });
     }
   } catch (error) {
     console.log(error);
