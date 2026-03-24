@@ -75,10 +75,50 @@ app.use((req, res, next) => {
   next();
 });
 
+// MongoDB Connection Configuration & Optimization for Vercel
+let isConnected = false;
+
+const connectDB = async () => {
+  if (isConnected) return;
+
+  try {
+    console.log("Connecting to MongoDB...");
+    const db = await mongoose.connect(MONGODB_URI, {
+      connectTimeoutMS: 10000, // 10s connection timeout
+    });
+    isConnected = db.connections[0].readyState === 1;
+    console.log("MongoDB Connected Successfully");
+  } catch (error) {
+    console.error("MongoDB Connection Failed!");
+    if (error.message.includes("ETIMEOUT") || error.message.includes("ECONNREFUSED")) {
+      console.error("  TIP: This is likely a Network/IP Whitelisting issue in MongoDB Atlas.");
+      console.error("  ACTION: Ensure 0.0.0.0/0 is allowed in Atlas > Network Access.");
+    }
+    throw error;
+  }
+};
+
+// Initial connection attempt
+connectDB().catch(err => console.error("Initial DB connection failed:", err.message));
+
+// Ensure DB is connected before handling any request (Prevents Mongoose buffering timeout)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    res.status(503).json({ 
+      message: "Database connection unavailable. Please ensure your IP is whitelisted in MongoDB Atlas.",
+      error: error.message 
+    });
+  }
+});
+
 app.get("/", (req, res) => {
   res.status(200).json({ 
     message: "CapitalTradeMarkets API is running successfully!",
-    status: "online"
+    status: "online",
+    database: isConnected ? "connected" : "disconnected"
   });
 });
 
@@ -93,15 +133,12 @@ app.use("/wallet", walletRoute)
 app.use("/transactions", transactionsRoute)
 app.use("/history", historyRoute)
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    app.listen(port);
-    console.log(`Server running on port ${port}`);
-  })
-  .catch((err) => {
-    console.log(err);
+// Port binding is only for local development
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`Server running locally on port ${port}`);
   });
+}
 
-// Export the Express API for Vercel Serverless Functions
+// Export the Express API for Vercel
 module.exports = app;
