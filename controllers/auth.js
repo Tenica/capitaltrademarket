@@ -221,13 +221,20 @@ exports.postReset = (req, res, next) => {
       } else {
         findUser.resetToken = passToken;
         findUser.resetTokenExpiration = Date.now() + 3600000;
-        const result = await findUser.save();
-        passwordResetEmail(result.firstName, result.resetToken, result.email)
-        console.log(req.body.email, result);
-        res.status(200).json({ message: `${findUser.firstName}, kindly check your email to continue` });
+        await findUser.save();
+        const emailInfo = await passwordResetEmail(findUser.firstName, findUser.resetToken, findUser.email);
+        
+        if (emailInfo) {
+          console.log(`Success: Password reset email sent to ${req.body.email}`);
+          res.status(200).json({ message: `${findUser.firstName}, kindly check your email to continue` });
+        } else {
+          console.error(`Failure: Could not send password reset email to ${req.body.email}`);
+          res.status(500).json({ message: "Error sending reset email. Please try again later or contact support." });
+        }
       }
     } catch (error) {
-      console.log(error);
+      console.log("Password Reset Error:", error);
+      res.status(500).json({ message: "An error occurred during password reset." });
     }
   });
 };
