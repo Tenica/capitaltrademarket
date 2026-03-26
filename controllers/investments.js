@@ -241,26 +241,43 @@ exports.updateAllUserInvestments = async (req, res) => {
 };
 
 exports.cronUpdateAll = async (req, res) => {
+  const now = new Date().toLocaleString();
+  console.log(`\n[Vercel Cron - ${now}] === TRIGGERED ===`);
+
   // Security check: Only allow if a secret header matches (or if it's Vercel's Cron request)
   // Vercel adds a special header: Authorization: Bearer <CRON_SECRET>
   const authHeader = req.headers.authorization;
   const cronSecret = process.env.CRON_SECRET;
 
+  console.log(`[Vercel Cron] Auth Check: ${authHeader ? 'Header Present' : 'Header Missing'}`);
+
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    console.warn("Unauthorized Cron Attempt blocked.");
-    return res.status(401).json({ message: "Unauthorized Cron Access" });
+    console.warn(`[Vercel Cron] Unauthorized Attempt. Header: ${authHeader ? 'Mismatch' : 'Missing'}`);
+    return res.status(401).json({ 
+      success: false,
+      message: "Unauthorized Cron Access",
+      tip: "Ensure CRON_SECRET on Vercel matches your local configuration."
+    });
   }
 
   try {
-    console.log("[Vercel Cron] Starting automated daily payout...");
+    console.log("[Vercel Cron] Starting automated daily payout processing...");
     const result = await this.processDailyProfitsInternal();
+    
+    console.log(`[Vercel Cron] Completed. Processed ${result.processedCount} investments.`);
+    
     res.status(200).json({ 
       success: true, 
       processed: result.processedCount,
+      timestamp: now,
       message: `Cron job finished. Processed ${result.processedCount} investments.`
     });
   } catch (error) {
-    console.error("[Vercel Cron] Failed:", error);
-    res.status(500).json({ success: false, error: error.message });
+    console.error(`[Vercel Cron] CRITICAL FAILURE:`, error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      timestamp: now
+    });
   }
 };
