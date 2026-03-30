@@ -82,7 +82,7 @@ exports.passwordResetEmail = async (firstName, token, email) => {
   const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password/${token}`;
 
   const mailOptions = {
-    from: `"CapitalTradeMarkets Security" <${process.env.EMAIL_USER}>`,
+    from: `"CapitalTradeMarkets Security" <support@capitaltrademarkets.net>`,
     to: email,
     subject: "Password Reset Request — CapitalTradeMarkets",
     html: `
