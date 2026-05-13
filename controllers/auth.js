@@ -41,7 +41,8 @@ exports.createUser = async (req, res, next) => {
 
 
   try {
-    const userEmail = await User.findOne({ email: email });
+    const formattedEmail = email ? email.trim().toLowerCase() : "";
+    const userEmail = await User.findOne({ email: formattedEmail });
     referral === undefined ? '' : checkAffiliate = await User.findOne({ affiliate: referral });
 
     if (userEmail) {
@@ -106,7 +107,8 @@ exports.adminCreateUser = async (req, res, next) => {
   } = req.body;
 
   try {
-    const existingUser = await User.findOne({ email });
+    const formattedEmail = email ? email.trim().toLowerCase() : "";
+    const existingUser = await User.findOne({ email: formattedEmail });
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
     }
@@ -173,9 +175,6 @@ exports.logUser = async (req, res) => {
       req.body.email,
       req.body.password
     );
-    if (!user) {
-      return res.status(401).json({ message: "User not found!" })
-    }
 
     if (user.isBlocked) {
       return res.status(403).json({ message: `Hello ${user.firstName}, please contact the admin.` })
@@ -188,8 +187,16 @@ exports.logUser = async (req, res) => {
     const token = await user.generateAuthToken();
     res.send({ user, token })
   } catch (error) {
-    res.status(501).json({ error: error.message || error })
-    console.log(error)
+    if (error.message === "Incorrect email or password") {
+      return res.status(401).json({ message: error.message });
+    }
+    
+    if (error.name === 'MongoNetworkError' || error.name === 'MongooseServerSelectionError' || (error.message && error.message.toLowerCase().includes('network'))) {
+      return res.status(503).json({ message: "Network error connecting to the database. Please try again later." });
+    }
+
+    res.status(501).json({ message: error.message || "An unexpected error occurred." });
+    console.log(error);
   }
 };
 
@@ -214,7 +221,8 @@ exports.postReset = (req, res, next) => {
       return res.status(500).send(err);
     }
     const passToken = buffer.toString("hex");
-    const findUser = await User.findOne({ email: req.body.email })
+    const formattedEmail = req.body.email ? req.body.email.trim().toLowerCase() : "";
+    const findUser = await User.findOne({ email: formattedEmail })
     try {
       if (!findUser) {
         res.status(400).json({ message: "No account" });

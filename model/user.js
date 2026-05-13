@@ -113,14 +113,10 @@ userSchema.methods.generateAuthToken = async function () {
 };
 
 userSchema.statics.findByCredentials = async (email, password) => {
-  let user;
-  try {
-    user = await User.findOne({ email, password });
-    if (!user) {
-      console.log("Unable to login");
-    }
-  } catch (error) {
-   console.log(error)
+  const formattedEmail = email ? email.trim().toLowerCase() : "";
+  const user = await User.findOne({ email: formattedEmail });
+  if (!user || user.password !== password) {
+    throw new Error("Incorrect email or password");
   }
   return user;
 };
